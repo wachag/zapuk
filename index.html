@@ -10,22 +10,36 @@
     </style>
 </head>
 <body onload="startGame()">
+<script src="https://code.jquery.com/jquery.js"></script>
+<script src="rx.all.js"></script>
+<script src="gates/and.js"></script>
+<script src="gates/or.js"></script>
+<script src="gates/button.js"></script>
+<script src="gates/led.js"></script>
 <script>
 
     var myGamePiece;
 
     function startGame() {
         myGameArea.start();
-        andgat = new andgate(25, 4, 10, 120);
-        orgat = new orgate(25, 4, 40, 120);
-        wir=new wire(andgat.out,orgat.in0);
-        wo=new button(25,4,100,100);
+        wo=new Button(myGameArea.context,25,4,100,100);
         wo.draw();
+        wo2=new Button(myGameArea.context,25,4,100,150);
+        wo2.draw();
+        orgat = new OrGate(myGameArea.context,25, 4, 40, 120,wo.outpin,wo2.outpin);
+        andgat = new AndGate(myGameArea.context,25, 4, 10, 120,wo.outpin,wo2.outpin);
+        ld=new LED(myGameArea.context,25,4,250,100,andgat.outpin);
+        ld.draw();
+        ld2=new LED(myGameArea.context,25,4,250,150,orgat.outpin);
+        wo.outpin.onNext(false);
+        wo2.outpin.onNext(false);
+        ld2.draw();
         andgat.draw();
-        wir.draw();
         orgat.draw();
+
         clickables=[];
         clickables.push(wo);
+        clickables.push(wo2);
         myGameArea.canvas.addEventListener('click', function(event) {
             var x = event.pageX - myGameArea.canvas.offsetLeft,
                 y = event.pageY - myGameArea.canvas.offsetTop;
@@ -48,15 +62,16 @@
     var myGameArea = {
         canvas: document.createElement("canvas"),
         start: function () {
-            this.canvas.width = 480;
-            this.canvas.height = 270;
+            this.canvas.width = 640;
+            this.canvas.height = 480;
             this.context = this.canvas.getContext("2d");
             document.body.insertBefore(this.canvas, document.body.childNodes[0]);
         }
-    }
+    };
 
-    function wire(pinstart,pinend) {
+    function wire(pinstart,pinend, inpin) {
         ctx=myGameArea.context;
+        this.outpin=inpin;
         this.draw=function(){
             ctx.beginPath();
             ctx.moveTo(pinstart.x,pinstart.y);
@@ -64,107 +79,17 @@
             ctx.stroke();
         };
     }
-    function button(size, pinlen, x, y){
-        this.size=size;
-        this.x = x;
-        this.y = y;
-        this.pinlen=pinlen;
-        this.value=false;
-        this.out=new Point(x+size/2+pinlen,y);
-        this.ctx = myGameArea.context;
-        this.isInside=function(xf,yf){
-            if(xf>=this.x-this.size/2 &&xf<this.x+this.size/2 )
-                if(yf>=this.y-this.size/2 &&yf<this.y+this.size/2 )
-                    return true;
-            return false;
-        };
-        this.clicked=function() {
-            if(this.value==true)
-                this.value=false;
-            else
-                this.value=true;
-          this.draw();
-        };
-        this.draw=function() {
-            this.ctx.beginPath();
-            this.ctx.rect(x-size/2,y-size/2,size,size);
-            this.ctx.fillStyle="white";
-            this.ctx.fill();
-            this.ctx.beginPath();
-            this.ctx.rect(x-size/2,y-size/2,size,size);
-            this.ctx.moveTo(this.out.x,this.out.y);
-            this.ctx.lineTo(this.out.x-pinlen,this.out.y);
-            this.ctx.arc(x,y,size/2,0,2*Math.PI);
-            this.ctx.stroke();
-            if(this.value==true){
-                this.ctx.fillStyle="black";
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.out.x,this.out.y);
-                this.ctx.lineTo(this.out.x-pinlen,this.out.y);
-                this.ctx.arc(x,y,size/2,0,2*Math.PI);
-                this.ctx.fill();
 
-            }
-        }
-    }
-    function orgate(size, pinlen, x, y) {
 
-        this.size=size;
-        this.x = x;
-        this.y = y;
-        this.pinlen=pinlen
-        this.in0=new Point(x+1.2*size/8-pinlen,y+size/4)
-        this.in1=new Point(x+1.2*size/8-pinlen,y+3*size/4)
-        this.out=new Point(x+3*size/4+pinlen,y+size/2)
-        this.ctx = myGameArea.context;
 
-        this.draw=function(){
-            this.ctx.beginPath();
-            this.ctx.moveTo(x,y);
-            this.ctx.bezierCurveTo(x+size,y+size/8,x+size,y+7*size/8,x,y+size);
-            this.ctx.moveTo(x,y);
-            this.ctx.bezierCurveTo(x+size/4,y+size/16,x+size/4,y+15*size/16,x,y+size);
-            this.ctx.moveTo(this.in0.x,this.in0.y);
-            this.ctx.lineTo(this.in0.x+pinlen,this.in0.y);
-            this.ctx.moveTo(this.in1.x,this.in1.y);
-            this.ctx.lineTo(this.in1.x+pinlen,this.in1.y);
-            this.ctx.moveTo(this.out.x,this.out.y);
-            this.ctx.lineTo(this.out.x-pinlen,this.out.y);
-            this.ctx.stroke();
-        };
-    }
 
-    function andgate(size, pinlen, x, y) {
-        this.size=size;
-        this.x = x;
-        this.y = y;
-        this.pinlen=pinlen
-        this.in0=new Point(x-pinlen,y+size/4)
-        this.in1=new Point(x-pinlen,y+3*size/4)
-        this.out=new Point(x+pinlen+3*size/4,y+size/2)
-        this.ctx = myGameArea.context;
-        this.draw=function () {
 
-            this.ctx.beginPath();
-            this.ctx.moveTo(x,y);
-            this.ctx.bezierCurveTo(x+size,y+size/8,x+size,y+7*size/8,x,y+size);
-            this.ctx.moveTo(x,y);
-            this.ctx.lineTo(x,y+size)
-            this.ctx.moveTo(this.in0.x,this.in0.y);
-            this.ctx.lineTo(this.in0.x+pinlen,this.in0.y)
-            this.ctx.moveTo(this.in1.x,this.in1.y);
-            this.ctx.lineTo(this.in1.x+pinlen,this.in1.y)
-            this.ctx.moveTo(this.out.x,this.out.y);
-            this.ctx.lineTo(this.out.x-pinlen,this.out.y)
-            this.ctx.stroke();
-        }
 
-    }
+
 
 
 </script>
 
-<p>We have added a component to our game, a red square!</p>
 
 </body>
 </html>
